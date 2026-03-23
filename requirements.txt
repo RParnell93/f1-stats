@@ -1,0 +1,5 @@
+streamlit>=1.31.0
+plotly
+duckdb==1.4.4
+pandas
+python-dotenv

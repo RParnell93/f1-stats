@@ -1,0 +1,10 @@
+.env
+.streamlit/secrets.toml
+*.duckdb
+*.duckdb.wal
+output/
+__pycache__/
+*.pyc
+.DS_Store
+fastf1_cache/
+.claude/settings.local.json

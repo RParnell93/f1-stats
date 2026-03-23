@@ -1,0 +1,32 @@
+name: Race Data Refresh
+
+on:
+  schedule:
+    - cron: '0 20 * * 5'   # Friday 20:00 UTC
+    - cron: '0 20 * * 6'   # Saturday 20:00 UTC
+    - cron: '0 20 * * 0'   # Sunday 20:00 UTC
+    - cron: '0 6 * * 1'    # Monday 06:00 UTC (catch-all)
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install fastf1 duckdb==1.4.4 pandas python-dotenv
+
+      - name: Create FastF1 cache dir
+        run: mkdir -p /tmp/fastf1_cache
+
+      - name: Run pipeline
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          FASTF1_CACHE: /tmp/fastf1_cache
+          F1_SEASON: '2026'
+        run: python snapshot.py
