@@ -3,7 +3,7 @@
 import plotly.graph_objects as go
 from config import (
     BG_PRIMARY, TEXT_PRIMARY, TEXT_SECONDARY, GRID_COLOR, F1_RED,
-    TEAM_COLORS, COMPOUND_COLORS,
+    TEAM_COLORS, COMPOUND_COLORS, POSITIVE, NEGATIVE,
 )
 
 # Plotly layout template applied to every chart

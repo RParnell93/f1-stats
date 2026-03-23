@@ -2,7 +2,8 @@
 
 import plotly.graph_objects as go
 import pandas as pd
-from style import apply_template, get_team_color, get_compound_color, POSITIVE, NEGATIVE
+from style import apply_template, get_team_color, get_compound_color
+from config import POSITIVE, NEGATIVE
 
 
 def strategy_timeline(laps_df, results_df, title="Race Strategy"):
