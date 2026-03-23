@@ -1,5 +1,6 @@
 """Qualifying page - sector gap waterfall chart."""
 
+import pandas as pd
 import streamlit as st
 from db import get_seasons, get_events, get_laps, get_results
 from charts import qualifying_waterfall
@@ -39,7 +40,7 @@ st.subheader(f"{event_name} {season} - Qualifying")
 if not results.empty:
     top_results = results.sort_values("position").head(10)[["position", "driver", "team", "best_lap_ms"]]
     top_results["best_lap"] = top_results["best_lap_ms"].apply(
-        lambda ms: f"{int(ms // 60000)}:{(ms % 60000) / 1000:06.3f}" if ms else "-"
+        lambda ms: f"{int(ms // 60000)}:{(ms % 60000) / 1000:06.3f}" if pd.notna(ms) else "-"
     )
     st.dataframe(
         top_results[["position", "driver", "team", "best_lap"]].rename(columns={
