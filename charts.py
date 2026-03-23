@@ -172,11 +172,10 @@ def lap_time_distribution(laps_df, results_df, title="Lap Time Distribution"):
 
 
 def qualifying_waterfall(laps_df, results_df, title="Qualifying - Sector Gaps to Pole"):
-    """Waterfall chart showing sector-by-sector gaps relative to P1."""
+    """Horizontal stacked bar showing sector-by-sector gaps relative to P1."""
     if results_df.empty:
         return go.Figure()
 
-    # Get best lap per driver from qualifying
     best_laps = laps_df[
         laps_df["lap_time_ms"].notna() & (laps_df["lap_time_ms"] > 0)
     ].loc[laps_df.groupby("driver")["lap_time_ms"].idxmin()]
@@ -187,37 +186,57 @@ def qualifying_waterfall(laps_df, results_df, title="Qualifying - Sector Gaps to
     best_laps = best_laps.sort_values("lap_time_ms")
     pole_driver = best_laps.iloc[0]
 
-    fig = go.Figure()
-    drivers_to_show = best_laps.head(10)
+    # Build sector delta data (exclude pole sitter, show P2-P10)
+    drivers_to_show = best_laps[best_laps["driver"] != pole_driver["driver"]].head(9)
+    # Reverse so P2 is at top
+    drivers_to_show = drivers_to_show.iloc[::-1]
+
+    drivers = []
+    s1_deltas = []
+    s2_deltas = []
+    s3_deltas = []
+    total_gaps = []
 
     for _, row in drivers_to_show.iterrows():
-        if row["driver"] == pole_driver["driver"]:
-            continue
+        drivers.append(row["driver"])
+        s1 = (row["sector1_ms"] - pole_driver["sector1_ms"]) / 1000 if pd.notna(row["sector1_ms"]) and pd.notna(pole_driver["sector1_ms"]) else 0
+        s2 = (row["sector2_ms"] - pole_driver["sector2_ms"]) / 1000 if pd.notna(row["sector2_ms"]) and pd.notna(pole_driver["sector2_ms"]) else 0
+        s3 = (row["sector3_ms"] - pole_driver["sector3_ms"]) / 1000 if pd.notna(row["sector3_ms"]) and pd.notna(pole_driver["sector3_ms"]) else 0
+        s1_deltas.append(s1)
+        s2_deltas.append(s2)
+        s3_deltas.append(s3)
+        total_gaps.append(s1 + s2 + s3)
 
-        s1_delta = (row["sector1_ms"] - pole_driver["sector1_ms"]) / 1000 if pd.notna(row["sector1_ms"]) and pd.notna(pole_driver["sector1_ms"]) else 0
-        s2_delta = (row["sector2_ms"] - pole_driver["sector2_ms"]) / 1000 if pd.notna(row["sector2_ms"]) and pd.notna(pole_driver["sector2_ms"]) else 0
-        s3_delta = (row["sector3_ms"] - pole_driver["sector3_ms"]) / 1000 if pd.notna(row["sector3_ms"]) and pd.notna(pole_driver["sector3_ms"]) else 0
+    fig = go.Figure()
 
-        team = results_df[results_df["driver"] == row["driver"]]["team"].iloc[0] if not results_df[results_df["driver"] == row["driver"]].empty else "Unknown"
-
-        fig.add_trace(go.Waterfall(
-            name=row["driver"],
-            orientation="v",
-            x=[f"{row['driver']}<br>S1", f"{row['driver']}<br>S2", f"{row['driver']}<br>S3", f"{row['driver']}<br>Total"],
-            measure=["relative", "relative", "relative", "total"],
-            y=[s1_delta, s2_delta, s3_delta, 0],
-            increasing=dict(marker=dict(color=NEGATIVE)),
-            decreasing=dict(marker=dict(color=POSITIVE)),
-            totals=dict(marker=dict(color=get_team_color(team))),
-            showlegend=False,
-            hovertemplate="%{x}: %{y:+.3f}s<extra></extra>",
+    # Sector colors matching F1 timing (S1=red, S2=yellow-ish, S3=purple-ish)
+    sector_colors = [("#EF4444", "S1"), ("#EAB308", "S2"), ("#A855F7", "S3")]
+    for deltas, (color, label) in zip([s1_deltas, s2_deltas, s3_deltas], sector_colors):
+        fig.add_trace(go.Bar(
+            y=drivers,
+            x=deltas,
+            orientation="h",
+            name=label,
+            marker=dict(color=color, line=dict(color="#333", width=0.5)),
+            hovertemplate=f"<b>%{{y}}</b> {label}: %{{x:+.3f}}s<extra></extra>",
         ))
+
+    # Add total gap annotation on the right
+    for i, (driver, gap) in enumerate(zip(drivers, total_gaps)):
+        fig.add_annotation(
+            x=gap, y=driver,
+            text=f"+{gap:.3f}s",
+            showarrow=False, xanchor="left", xshift=8,
+            font=dict(size=11, color="#A0A0B0", family="JetBrains Mono, monospace"),
+        )
 
     fig.update_layout(
         title=f"{title} (vs {pole_driver['driver']})",
-        yaxis_title="Gap to Pole (s)",
-        height=450,
-        showlegend=False,
+        xaxis_title="Gap to Pole (s)",
+        barmode="stack",
+        height=max(350, len(drivers) * 40 + 100),
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
 
     return apply_template(fig)
