@@ -3,7 +3,8 @@
 import streamlit as st
 from db import get_seasons, get_events, get_laps, get_results, get_pit_stops
 from charts import strategy_timeline, position_changes, lap_time_distribution
-from style import PLOTLY_CONFIG
+from style import PLOTLY_CONFIG, metric_card, section_header
+from config import F1_RED, POSITIVE, NEGATIVE
 
 st.title("Race Analysis")
 
@@ -35,25 +36,29 @@ if laps.empty or results.empty:
 event_name = events[events["round"] == round_num]["event_name"].iloc[0]
 st.subheader(f"{event_name} {season}")
 
-# Metric cards
+# Metric cards - custom HTML
+winner = results[results["position"] == 1]
+winner_name = winner.iloc[0]["driver"] if not winner.empty else "-"
+total_laps = int(laps["lap_number"].max()) if not laps.empty else 0
+pit_stops = get_pit_stops(season, round_num)
+dnfs = results[results["status"].str.contains(
+    "Retired|Accident|Collision|Engine|Gearbox|Hydraulic|Electrical",
+    case=False, na=False,
+)]
+
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    winner = results[results["position"] == 1]
-    if not winner.empty:
-        st.metric("Winner", winner.iloc[0]["driver"])
+    st.markdown(metric_card("Winner", winner_name, F1_RED), unsafe_allow_html=True)
 with col2:
-    total_laps = int(laps["lap_number"].max()) if not laps.empty else 0
-    st.metric("Total Laps", total_laps)
+    st.markdown(metric_card("Total Laps", total_laps), unsafe_allow_html=True)
 with col3:
-    pit_stops = get_pit_stops(season, round_num)
-    st.metric("Pit Stops", len(pit_stops))
+    st.markdown(metric_card("Pit Stops", len(pit_stops)), unsafe_allow_html=True)
 with col4:
-    dnfs = results[results["status"].str.contains("Retired|Accident|Collision|Engine|Gearbox|Hydraulic|Electrical", case=False, na=False)]
-    st.metric("DNFs", len(dnfs))
-
-st.divider()
+    dnf_color = NEGATIVE if len(dnfs) > 0 else POSITIVE
+    st.markdown(metric_card("DNFs", len(dnfs), dnf_color), unsafe_allow_html=True)
 
 # Strategy Timeline
+st.markdown(section_header("Tire Strategy"), unsafe_allow_html=True)
 st.plotly_chart(
     strategy_timeline(laps, results, title=f"{event_name} - Tire Strategy"),
     use_container_width=True,
@@ -61,6 +66,7 @@ st.plotly_chart(
 )
 
 # Position Changes
+st.markdown(section_header("Position Changes"), unsafe_allow_html=True)
 st.plotly_chart(
     position_changes(laps, results, title=f"{event_name} - Position Changes"),
     use_container_width=True,
@@ -68,6 +74,7 @@ st.plotly_chart(
 )
 
 # Lap Time Distribution
+st.markdown(section_header("Race Pace"), unsafe_allow_html=True)
 st.plotly_chart(
     lap_time_distribution(laps, results, title=f"{event_name} - Race Pace (Top 10)"),
     use_container_width=True,

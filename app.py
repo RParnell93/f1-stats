@@ -13,6 +13,15 @@ from style import APP_CSS
 
 st.markdown(APP_CSS, unsafe_allow_html=True)
 
+# Branded header
+st.markdown("""
+<div class="f1-header">
+    <span class="f1-header-title">F1 <span class="f1-header-accent">STATS</span></span>
+</div>
+<div class="f1-header-bar"></div>
+<div class="f1-tagline">Live timing data & race analytics</div>
+""", unsafe_allow_html=True)
+
 pages = [
     st.Page("pages/race_analysis.py", title="Race Analysis", icon=":material/speed:"),
     st.Page("pages/qualifying.py", title="Qualifying", icon=":material/timer:"),
